@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>MSI Tracker</title>
-<link rel="icon" type="image/png" href="favicon.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap');
 :root{--radius:16px;--radius-sm:10px;--t:.25s cubic-bezier(0.4,0,0.2,1)}
@@ -391,7 +390,7 @@ select option{background:var(--surface2);color:var(--text)}
   </div>
   <div class="header-sub" id="headerSub"></div>
 </div>
-<div class="sync-bar"><div class="sync-dot syncing" id="syncDot"></div><span id="syncText">Conectando...</span></div>
+<div class="sync-bar"><div class="sync-dot syncing" id="syncDot"></div><span id="syncText">Listo</span></div>
 
 <!-- TABS -->
 <div class="tabs">
@@ -612,7 +611,7 @@ select option{background:var(--surface2);color:var(--text)}
   <div id="monthList"></div>
   <button class="btn-secondary" onclick="exportar()">📤 Copiar resumen</button>
   <button class="btn-secondary" onclick="exportarExcel()" style="margin-top:8px;background:color-mix(in srgb,var(--green) 12%,transparent);border-color:color-mix(in srgb,var(--green) 40%,transparent);color:var(--green)">📊 Exportar a Excel</button>
-  <a href="https://docs.google.com/spreadsheets/d/1Yu5RgBo06fy0cEAKDwgnwOPZn2Lnt3az_OXwliDfUUc/edit" target="_blank" style="display:block;text-align:center;text-decoration:none;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius-sm);padding:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;margin-top:8px">📊 Abrir Google Sheet</a>
+
   <div class="sec-label" style="margin-top:20px">📋 Historial de pagos TDC</div>
   <div id="historialList"><div class="loading">⏳ Cargando...</div></div>
 </div>
@@ -841,15 +840,17 @@ select option{background:var(--surface2);color:var(--text)}
 <div class="toast" id="toast"></div>
 
 <script>
-const API='https://script.google.com/macros/s/AKfycbxrAAuMkybougJ8Q6rRFvDI4_k5qU41IpxD7ln91iLqtfqUqVhYGeHobSY7_hbMoUkjKA/exec';
+const API='https://script.google.com/macros/s/AKfycbxrAAuMkybougJ8Q6rRFvDI4_k5qU41IpxD7ln91iLqtfqUqVhYGeHobSY7_hbMoUkjKA/exec'; // 👈 Pega aquí tu Google Apps Script URL (opcional)
 // Meses dinámicos desde Mayo 2026
 const MONTH_NAMES=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-// TRACKER_START: Mayo 2026 o el mes actual si es anterior
+// TRACKER_START: dinámico — usa el mes actual cuando se instala por primera vez
 const TRACKER_START=(function(){
-  var fixed=new Date(2026,4,1);
+  var saved=localStorage.getItem('msitracker_start');
+  if(saved){var d=new Date(saved);if(!isNaN(d))return d;}
   var now=new Date();
-  // Si estamos antes de mayo 2026, usar mes actual como inicio
-  return now<fixed?new Date(now.getFullYear(),now.getMonth(),1):fixed;
+  var start=new Date(now.getFullYear(),now.getMonth(),1);
+  localStorage.setItem('msitracker_start',start.toISOString());
+  return start;
 })();
 function buildMonths(n){const m=[],d=new Date(TRACKER_START);for(let i=0;i<n;i++){m.push(MONTH_NAMES[d.getMonth()]+' '+d.getFullYear());d.setMonth(d.getMonth()+1);}return m;}
 // MONTHS se extiende dinámicamente — se recalcula después de cargar MSI
@@ -878,107 +879,9 @@ function extenderMeses(){
   }
 }
 const CARD_CLS={"Banamex Azul":"banamex-azul","Banamex Roja":"banamex-roja","Amex":"amex","BBVA":"bbva","HSBC Air":"hsbc-air","HSBC Now":"hsbc-now","Santander":"santander","Invex Volaris":"invex","Palacio":"palacio"};
-const SEED_MSIS=[
-  {id:1,desc:"ISHOP MIX UP PARROQUIA",tarjeta:"Banamex Azul",montoTotal:2918.12,meses:4,mesInicio:0,mensual:729.53,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:729.53},
-  {id:2,desc:"ISHOP MIXUP PERISUR",tarjeta:"Banamex Azul",montoTotal:4632,meses:8,mesInicio:0,mensual:579,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:579},
-  {id:3,desc:"APPLE ONLINE STORE",tarjeta:"Banamex Azul",montoTotal:333.22,meses:2,mesInicio:0,mensual:166.61,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:166.61},
-  {id:4,desc:"390 DEVLYN GAL INSURGE",tarjeta:"Banamex Azul",montoTotal:543.77,meses:1,mesInicio:0,mensual:543.77,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:543.77},
-  {id:5,desc:"MERCADO PAGO",tarjeta:"Banamex Azul",montoTotal:1125.52,meses:4,mesInicio:0,mensual:281.38,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:281.38},
-  {id:6,desc:"T 706 LCS MITIKAH",tarjeta:"Banamex Azul",montoTotal:3653.4,meses:5,mesInicio:0,mensual:730.68,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:730.68},
-  {id:7,desc:"GOBIERNO DEL DF",tarjeta:"Banamex Azul",montoTotal:2531.65,meses:5,mesInicio:0,mensual:506.33,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:506.33},
-  {id:8,desc:"MERPAGO*CIMARRONESSADE",tarjeta:"Banamex Azul",montoTotal:820.85,meses:5,mesInicio:0,mensual:164.17,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:164.17},
-  {id:9,desc:"HOTELES COM",tarjeta:"Banamex Roja",montoTotal:1666.24,meses:4,mesInicio:0,mensual:416.56,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:416.56},
-  {id:10,desc:"CLIP MX*ACAD MARROQUI",tarjeta:"Banamex Roja",montoTotal:291.64,meses:1,mesInicio:0,mensual:291.64,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:291.64},
-  {id:11,desc:"APPLE ONLINE STORE",tarjeta:"Banamex Roja",montoTotal:1649.52,meses:9,mesInicio:0,mensual:183.28,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:183.28},
-  {id:12,desc:"AMAZON A MESES",tarjeta:"Banamex Roja",montoTotal:1031.24,meses:4,mesInicio:0,mensual:257.81,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:257.81},
-  {id:13,desc:"BNMX PROTEGIDO MSI",tarjeta:"Banamex Roja",montoTotal:3528.8,meses:5,mesInicio:0,mensual:705.76,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:705.76},
-  {id:14,desc:"VIVA AEROBUS",tarjeta:"Banamex Roja",montoTotal:4101.39,meses:3,mesInicio:0,mensual:1367.13,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1367.13},
-  {id:15,desc:"NMX*TICKETMASTER",tarjeta:"Banamex Roja",montoTotal:1627.66,meses:1,mesInicio:0,mensual:1627.66,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1627.66},
-  {id:16,desc:"IKANO RETAIL MEXICO",tarjeta:"Banamex Roja",montoTotal:2062,meses:2,mesInicio:0,mensual:1031,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1031},
-  {id:17,desc:"MERCADO PAGO",tarjeta:"Banamex Roja",montoTotal:130,meses:2,mesInicio:0,mensual:65,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:65},
-  {id:18,desc:"MESES EXTRANJERO (feb)",tarjeta:"Amex",montoTotal:1572.94,meses:1,mesInicio:0,mensual:1572.94,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1572.94},
-  {id:19,desc:"MESES EXTRANJERO (abr)",tarjeta:"Amex",montoTotal:1895.84,meses:2,mesInicio:0,mensual:947.92,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:947.92},
-  {id:20,desc:"PAYPAL *UPINNDEMEXI",tarjeta:"Amex",montoTotal:241.59,meses:1,mesInicio:0,mensual:241.59,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:241.59},
-  {id:21,desc:"MERCADO LIBRE MEXICO",tarjeta:"Amex",montoTotal:1140,meses:2,mesInicio:0,mensual:570,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:570},
-  {id:22,desc:"SPORTS WORLD SWFEL",tarjeta:"Amex",montoTotal:9317.1,meses:5,mesInicio:0,mensual:1863.42,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1863.42},
-  {id:23,desc:"AMAZON MX MSI MKT (sep) #1",tarjeta:"Amex",montoTotal:595.48,meses:2,mesInicio:0,mensual:297.74,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:297.74},
-  {id:24,desc:"AMAZON MX MSI MKT (sep) #2",tarjeta:"Amex",montoTotal:595.48,meses:2,mesInicio:0,mensual:297.74,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:297.74},
-  {id:25,desc:"AMAZON MX MSI MKT (ene 3/9)",tarjeta:"Amex",montoTotal:1047.18,meses:6,mesInicio:0,mensual:174.53,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:174.53},
-  {id:26,desc:"PAYPAL *IRONICINCSD",tarjeta:"Amex",montoTotal:1014.96,meses:6,mesInicio:0,mensual:169.16,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:169.16},
-  {id:27,desc:"AMAZON MX MSI RETAIL (feb)",tarjeta:"Amex",montoTotal:297,meses:1,mesInicio:0,mensual:297,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:297},
-  {id:28,desc:"AMAZON MX MSI MKT (mar 1/6)",tarjeta:"Amex",montoTotal:1603.35,meses:5,mesInicio:0,mensual:320.67,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:320.67},
-  {id:29,desc:"DESPEGAR (ene, $144k)",tarjeta:"BBVA",montoTotal:24042,meses:3,mesInicio:0,mensual:8014,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:8014},
-  {id:30,desc:"DESPEGAR (ene, $3,156)",tarjeta:"BBVA",montoTotal:528,meses:3,mesInicio:0,mensual:176,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:176},
-  {id:31,desc:"ISHOP MIX UP PARROQUIA",tarjeta:"BBVA",montoTotal:5994,meses:6,mesInicio:0,mensual:999,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:999},
-  {id:32,desc:"ISHOP MIXUP MANACAR",tarjeta:"BBVA",montoTotal:4799,meses:6,mesInicio:0,mensual:800,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:800},
-  {id:33,desc:"AMAZON MX A MESES M (may)",tarjeta:"BBVA",montoTotal:542,meses:1,mesInicio:0,mensual:542,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:542},
-  {id:34,desc:"AMAZON MX A MESES (jun)",tarjeta:"BBVA",montoTotal:1242,meses:1,mesInicio:0,mensual:1242,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1242},
-  {id:35,desc:"DESPEGAR (nov)",tarjeta:"BBVA",montoTotal:5785,meses:13,mesInicio:0,mensual:445,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:445},
-  {id:36,desc:"CARFIX",tarjeta:"BBVA",montoTotal:2394,meses:6,mesInicio:0,mensual:399,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:399},
-  {id:37,desc:"AMAZON A MESES (feb, 2/15)",tarjeta:"BBVA",montoTotal:7436,meses:13,mesInicio:0,mensual:572,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:572},
-  {id:38,desc:"ADMINISTRACION TDC 6 MESES",tarjeta:"HSBC Air",montoTotal:137,meses:1,mesInicio:0,mensual:137,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:137},
-  {id:39,desc:"NMX*TICKETMASTER",tarjeta:"HSBC Air",montoTotal:3690.6,meses:4,mesInicio:0,mensual:922.65,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:922.65},
-  {id:40,desc:"MERPAGO*ALDRINCARRASC",tarjeta:"HSBC Air",montoTotal:1933.32,meses:4,mesInicio:0,mensual:483.33,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:483.33},
-  {id:41,desc:"GASTO HSBC Air (may-jul)",tarjeta:"HSBC Air",montoTotal:13293.99,meses:3,mesInicio:0,mensual:4431.33,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:4431.33},
-  {id:42,desc:"MERCADO PAGO 1",tarjeta:"HSBC Now",montoTotal:619.86,meses:3,mesInicio:0,mensual:206.62,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:206.62},
-  {id:43,desc:"MERCADO PAGO (may, 11/12)",tarjeta:"HSBC Now",montoTotal:78.49,meses:1,mesInicio:0,mensual:78.49,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:78.49},
-  {id:44,desc:"MERCADO PAGO (may, $314)",tarjeta:"HSBC Now",montoTotal:26.21,meses:1,mesInicio:0,mensual:26.21,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:26.21},
-  {id:45,desc:"MERCADO PAGO 5",tarjeta:"HSBC Now",montoTotal:461.05,meses:5,mesInicio:0,mensual:92.21,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:92.21},
-  {id:46,desc:"INNOVASPORT",tarjeta:"HSBC Now",montoTotal:533.2,meses:1,mesInicio:0,mensual:533.2,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:533.2},
-  {id:47,desc:"CLIP MX ACAD MARROQUI",tarjeta:"Santander",montoTotal:883.32,meses:4,mesInicio:0,mensual:220.83,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:220.83},
-  {id:48,desc:"DESPEGAR",tarjeta:"Invex Volaris",montoTotal:2150.72,meses:8,mesInicio:0,mensual:268.84,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:268.84},
-  {id:49,desc:"TRAS MSI CREATION LAS VEG #1",tarjeta:"Invex Volaris",montoTotal:365.4,meses:1,mesInicio:0,mensual:365.4,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:365.4},
-  {id:50,desc:"TRAS MSI CREATION LAS VEG #2",tarjeta:"Invex Volaris",montoTotal:796.61,meses:1,mesInicio:0,mensual:796.61,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:796.61},
-  {id:51,desc:"TRAS MSI CLIP MX*HOSP CON",tarjeta:"Invex Volaris",montoTotal:3333.36,meses:4,mesInicio:0,mensual:833.34,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:833.34},
-  {id:52,desc:"TRAS MSI AMAZON ($2,826)",tarjeta:"Invex Volaris",montoTotal:942,meses:4,mesInicio:0,mensual:235.5,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:235.5},
-  {id:53,desc:"TRAS MSI AMAZON MEXICO $2,090",tarjeta:"Invex Volaris",montoTotal:696.68,meses:4,mesInicio:0,mensual:174.17,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:174.17},
-  {id:54,desc:"PROMOCION S/ INT 12M",tarjeta:"Invex Volaris",montoTotal:2245.76,meses:4,mesInicio:0,mensual:561.44,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:561.44},
-  {id:55,desc:"TRAS MSI AMAZON MEXICO $3,495",tarjeta:"Invex Volaris",montoTotal:1165.04,meses:4,mesInicio:0,mensual:291.26,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:291.26},
-  {id:56,desc:"TRAS MSI NMX*TICKETMASTER",tarjeta:"Invex Volaris",montoTotal:1562,meses:4,mesInicio:0,mensual:390.5,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:390.5},
-  {id:57,desc:"TRAS MSI SWFEL FELIX CUEV",tarjeta:"Invex Volaris",montoTotal:1375.68,meses:4,mesInicio:0,mensual:343.92,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:343.92},
-  {id:58,desc:"TRAS MSI PANDORAJEWELRY $1,340",tarjeta:"Invex Volaris",montoTotal:446.68,meses:4,mesInicio:0,mensual:111.67,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:111.67},
-  {id:59,desc:"TRAS MSI SPORTS WORLD ON",tarjeta:"Invex Volaris",montoTotal:1375.68,meses:4,mesInicio:0,mensual:343.92,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:343.92},
-  {id:60,desc:"TRAS MSI PANDORAJEWELRY $3,092",tarjeta:"Invex Volaris",montoTotal:1288.55,meses:5,mesInicio:0,mensual:257.71,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:257.71},
-  {id:61,desc:"TRAS MSI CHICCO",tarjeta:"Invex Volaris",montoTotal:2299.75,meses:5,mesInicio:0,mensual:459.95,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:459.95},
-  {id:62,desc:"TRAS MSI AIRBNB",tarjeta:"Invex Volaris",montoTotal:633.08,meses:2,mesInicio:0,mensual:316.54,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:316.54},
-  {id:63,desc:"TRAS MSI AMAZON $1,751",tarjeta:"Invex Volaris",montoTotal:729.7,meses:5,mesInicio:0,mensual:145.94,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:145.94},
-  {id:64,desc:"TRAS MSI KLOOK $6,088",tarjeta:"Invex Volaris",montoTotal:1352.9,meses:2,mesInicio:0,mensual:676.45,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:676.45},
-  {id:65,desc:"TRAS MSI KLOOK $2,174",tarjeta:"Invex Volaris",montoTotal:724.68,meses:3,mesInicio:0,mensual:241.56,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:241.56},
-  {id:66,desc:"TRAS MSI KLOOK $6,524",tarjeta:"Invex Volaris",montoTotal:2174.67,meses:3,mesInicio:0,mensual:724.89,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:724.89},
-  {id:67,desc:"TRAS MSI KLOOK $1,806",tarjeta:"Invex Volaris",montoTotal:602.01,meses:3,mesInicio:0,mensual:200.67,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:200.67},
-  {id:68,desc:"TRAS MSI KLOOK $2,588",tarjeta:"Invex Volaris",montoTotal:1294.32,meses:6,mesInicio:0,mensual:215.72,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:215.72},
-  {id:69,desc:"TRAS MSI BUTSUKUOFU AKIHA",tarjeta:"Invex Volaris",montoTotal:1116.8,meses:5,mesInicio:0,mensual:223.36,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:223.36},
-  {id:70,desc:"TRAS MSI BIC CAMERA AKIHA",tarjeta:"Invex Volaris",montoTotal:1639.5,meses:5,mesInicio:0,mensual:327.9,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:327.9},
-  {id:71,desc:"TRAS MSI APPLE STORE.GINZ #1",tarjeta:"Invex Volaris",montoTotal:5440.4,meses:5,mesInicio:0,mensual:1088.08,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1088.08},
-  {id:72,desc:"TRAS MSI APPLE STORE.GINZ #2",tarjeta:"Invex Volaris",montoTotal:2425.1,meses:5,mesInicio:0,mensual:485.02,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:485.02},
-  {id:73,desc:"TRAS MSI OLIVE GARDEN UNI",tarjeta:"Invex Volaris",montoTotal:539.38,meses:2,mesInicio:0,mensual:269.69,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:269.69},
-  {id:74,desc:"TRAS MSI VEGAS.COM",tarjeta:"Invex Volaris",montoTotal:1754.9,meses:5,mesInicio:0,mensual:350.98,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:350.98},
-  {id:75,desc:"TRAS MSI TM *THE WIZARD O",tarjeta:"Invex Volaris",montoTotal:2964.4,meses:5,mesInicio:0,mensual:592.88,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:592.88},
-  {id:76,desc:"TRAS MSI RIO HOTEL",tarjeta:"Invex Volaris",montoTotal:1679.75,meses:5,mesInicio:0,mensual:335.95,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:335.95},
-  {id:77,desc:"TRAS MSI DRA VICTORIA CAL",tarjeta:"Invex Volaris",montoTotal:5250.06,meses:9,mesInicio:0,mensual:583.34,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:583.34},
-  {id:78,desc:"TRAS MSI ARTIC NATURAL BA",tarjeta:"Invex Volaris",montoTotal:3150,meses:9,mesInicio:0,mensual:350,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:350},
-  {id:79,desc:"TRAS MSI EXPEDIA MEXICO",tarjeta:"Invex Volaris",montoTotal:1955.88,meses:9,mesInicio:0,mensual:217.32,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:217.32},
-  {id:80,desc:"TRAS MSI AEROMEXICO WEB P",tarjeta:"Invex Volaris",montoTotal:9304.56,meses:9,mesInicio:0,mensual:1033.84,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1033.84},
-  {id:81,desc:"TRAS MSI GAMEPLANET PERIS",tarjeta:"Invex Volaris",montoTotal:1133.36,meses:4,mesInicio:0,mensual:283.34,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:283.34},
-  {id:82,desc:"PROM 6 MSI IKEA (3-abr)",tarjeta:"Invex Volaris",montoTotal:5037.5,meses:5,mesInicio:0,mensual:1007.5,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1007.5},
-  {id:83,desc:"TRAS MSI ATG TICKETS US",tarjeta:"Invex Volaris",montoTotal:5874.96,meses:8,mesInicio:0,mensual:734.37,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:734.37},
-  {id:84,desc:"PROM 12 MSI IKEA (26-abr)",tarjeta:"Invex Volaris",montoTotal:17325,meses:11,mesInicio:0,mensual:1575,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:1575},
-  {id:85,desc:"Plazo 12 S/Int abr-abr",tarjeta:"Palacio",montoTotal:917.76,meses:1,mesInicio:0,mensual:917.76,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:917.76},
-  {id:86,desc:"Hombre Sport Perisur jun-jun",tarjeta:"Palacio",montoTotal:199,meses:2,mesInicio:0,mensual:99.5,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:99.5},
-  {id:87,desc:"Plazo 12 jul-jul",tarjeta:"Palacio",montoTotal:478.5,meses:3,mesInicio:0,mensual:159.5,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:159.5},
-  {id:88,desc:"Plazo 12 S/Int 3 gracia may",tarjeta:"Palacio",montoTotal:2932.64,meses:4,mesInicio:0,mensual:733.16,pagoType:"solo",miPct:100,conQuien:"",quienPaga:"",miMensual:733.16}
-];
+const SEED_MSIS=[];
 
-const SEED_TARJETAS=[
-  {id:101,nombre:"Banamex Azul",linea:140000,saldoExtra:0},
-  {id:102,nombre:"Banamex Roja",linea:140000,saldoExtra:0},
-  {id:103,nombre:"Amex",linea:450000,saldoExtra:0},
-  {id:104,nombre:"BBVA",linea:250000,saldoExtra:0},
-  {id:105,nombre:"HSBC Air",linea:100000,saldoExtra:0},
-  {id:106,nombre:"HSBC Now",linea:132000,saldoExtra:0},
-  {id:107,nombre:"Santander",linea:450000,saldoExtra:0},
-  {id:108,nombre:"Invex Volaris",linea:144000,saldoExtra:0}
-];
+const SEED_TARJETAS=[];
 
 let msis=[],tarjetas=[],deudas=[],pagosTDC=[];
 function getCat(){try{return JSON.parse(localStorage.getItem('pcat')||'[]');}catch(e){return[];}}
@@ -1004,19 +907,17 @@ setTheme(localStorage.getItem('theme')||'light');
 // SYNC
 function setSyncStatus(s,t){const d=document.getElementById('syncDot'),tx=document.getElementById('syncText');d.className='sync-dot'+(s==='syncing'?' syncing':s==='error'?' error':'');tx.textContent=t;}
 
-async function apiGet(sheet){const r=await fetch(`${API}?action=read&sheet=${sheet}`);const j=await r.json();if(!j.ok)throw new Error(j.error);return j.data;}
+function lsGet(k){try{return JSON.parse(localStorage.getItem('msitracker_'+k)||'[]');}catch(e){return[];}}
+function lsSet(k,d){localStorage.setItem('msitracker_'+k,JSON.stringify(d));}
+async function apiGet(sheet){if(API){const r=await fetch(API+'?action=read&sheet='+sheet);const j=await r.json();if(!j.ok)throw new Error(j.error);return j.data;}return lsGet(sheet);}
 async function apiPost(body){
-  // Use GET to avoid CORS issues with Apps Script
-  const action=body.action;
-  const sheet=body.sheet||'';
-  let url=API+'?action='+action+'&sheet='+sheet;
-  if(body.record) url+='&record='+encodeURIComponent(JSON.stringify(body.record));
-  if(body.id)     url+='&id='+body.id;
-  if(body.records) url+='&records='+encodeURIComponent(JSON.stringify(body.records));
-  const r=await fetch(url);
-  const j=await r.json();
-  if(!j.ok)throw new Error(j.error);
-  return j;
+  if(API){const action=body.action;const sheet=body.sheet||'';let url=API+'?action='+action+'&sheet='+sheet;if(body.record)url+='&record='+encodeURIComponent(JSON.stringify(body.record));if(body.id)url+='&id='+body.id;if(body.records)url+='&records='+encodeURIComponent(JSON.stringify(body.records));const r=await fetch(url);const j=await r.json();if(!j.ok)throw new Error(j.error);return j;}
+  var sheet=body.sheet;var data=lsGet(sheet);
+  if(body.action==='write'){data.push(body.record);lsSet(sheet,data);}
+  else if(body.action==='delete'){data=data.filter(function(r){return String(r.id)!==String(body.id);});lsSet(sheet,data);}
+  else if(body.action==='update'){data=data.map(function(r){return String(r.id)===String(body.id)?body.record:r;});lsSet(sheet,data);}
+  else if(body.action==='replace'){lsSet(sheet,body.records);}
+  return {ok:true};
 }
 
 async function loadAll(){
@@ -1034,11 +935,7 @@ async function loadAll(){
   // ── Intentar sincronizar con Sheet ────────────────────────────────
   try{
     const[m,t,d,p,pers]=await Promise.all([apiGet('msis'),apiGet('tarjetas'),apiGet('deudas'),apiGet('pagostdc'),apiGet('personas')]);
-    if(m.length===0&&!synced){
-      setSyncStatus('syncing','Primera vez — cargando datos...');
-      await apiPost({action:'replace',sheet:'msis',records:SEED_MSIS});
-      await apiPost({action:'replace',sheet:'tarjetas',records:SEED_TARJETAS});
-      msis=[...SEED_MSIS];tarjetas=[...SEED_TARJETAS];deudas=[];pagosTDC=[];
+    if(false){
     }else{
       msis=m.map(coerceMSI);tarjetas=t.map(coerceTarjeta);
       deudas=d.map(coerceDeuda);pagosTDC=p.map(coercePago);
@@ -1291,7 +1188,11 @@ async function eliminarMSI(id){
   try{await apiPost({action:'delete',sheet:'msis',id});}catch(e){}
 }
 function filtrar(t){filtro=t;document.querySelectorAll('#msiFilterRow .filter-chip').forEach(function(c){c.classList.toggle('active',(c.dataset.val||c.textContent.trim())===t);});renderMSIList();}
-function pagoLabel(m){if(m.pagoType==='compartido')return`<span class="pago-pill-shared">👫 ${m.conQuien} (${m.miPct}%)</span>`;if(m.pagoType==='tercero')return`<span class="pago-pill-tercero">👤 ${m.quienPaga}</span>`;return`<span class="pago-pill-solo">🙋 Solo yo</span>`;}
+function pagoLabel(m){
+  if(m.pagoType==='compartido')return`<span class="info-pill" style="background:color-mix(in srgb,var(--purple) 15%,transparent);color:var(--purple);border-color:color-mix(in srgb,var(--purple) 40%,transparent)">👫 ${m.conQuien} (${m.miPct}%)</span>`;
+  if(m.pagoType==='tercero')return`<span class="info-pill" style="background:color-mix(in srgb,var(--yellow) 15%,transparent);color:var(--yellow);border-color:color-mix(in srgb,var(--yellow) 40%,transparent)">👤 ${m.quienPaga}</span>`;
+  return'';
+}
 
 // % pagado automático basado en mes actual
 function getPagosHechos(m){
@@ -1317,7 +1218,12 @@ function buildFilterChips(){
 }
 
 function renderMSIList(){
-  const filtered=(filtro==='Todos'?msis:msis.filter(m=>m.tarjeta===filtro)).filter(function(m){return !isMSITerminado(m);});
+  var baseList=(filtro==='Todos'?msis:msis.filter(m=>m.tarjeta===filtro)).filter(function(m){return !isMSITerminado(m);});
+  // Sort by closest to finish for all views
+  baseList=[...baseList].sort(function(a,b){
+    return (a.meses-getPagosHechos(a))-(b.meses-getPagosHechos(b));
+  });
+  const filtered=baseList;
   document.getElementById('countChip').textContent=`${msis.length} activos`;
   const el=document.getElementById('msiList');
   if(filtered.length===0){el.innerHTML=`<div class="empty"><div class="empty-icon">💳</div><div class="empty-text">Sin MSI. Toca ＋ para agregar.</div></div>`;return;}
@@ -1344,13 +1250,46 @@ function renderMSIList(){
     const finIdx=Math.min(m.mesInicio+m.meses-1,12);
     const termina=terminaEn(m,CURRENT_MONTH_IDX)?'⚠️ Último pago':'';
     return`<div class="msi-card"><div class="msi-stripe stripe-${c}"></div>
-      <div class="msi-top"><div class="msi-desc">${m.desc}${termina?` <span style="font-size:10px;color:var(--yellow)">${termina}</span>`:''}</div>
-        <div style="display:flex;align-items:center">
-          <div class="msi-amounts"><div class="msi-amount-main">${fmt(m.mensual)}</div>${m.pagoType!=='solo'?`<div class="msi-amount-mine">mi parte: ${fmt(m.miMensual)}</div>`:''}</div>
-          <button style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px 4px;" onclick="editarMSI(${m.id})">✏️</button><button style="background:none;border:none;color:var(--green);font-size:11px;font-weight:600;cursor:pointer;padding:2px 6px;border:1px solid color-mix(in srgb,var(--green) 40%,transparent);border-radius:6px;" onclick="liquidarMSI(${m.id})">💰 Liquidar</button><button class="btn-del" onclick="eliminarMSI(${m.id})">×</button></div></div>
-      <div class="msi-meta"><span class="card-pill pill-${c}">${m.tarjeta}</span>${pagoLabel(m)}<span class="info-pill">${rest}/${m.meses} restantes</span><span class="info-pill">→ ${MONTHS[finIdx]}</span></div>
-      <div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div class="prog-labels"><span>${pct}% pagado (${pagosHechos}/${m.meses})</span><span>${fmt(m.montoTotal)}</span></div></div>`;
+      <!-- Fila 1: nombre + menú -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:600">${m.desc}${termina?` <span style="font-size:10px;color:var(--yellow)">${termina}</span>`:''}</div>
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:3px">
+            ${filtro==="Todos"?`<span class="card-pill pill-${c}" style="font-size:12px">${m.tarjeta}</span>`:""}
+            ${pagoLabel(m)}
+            <span style="font-size:12px;color:var(--muted)">🏁 ${MONTHS[finIdx]}</span>
+          </div>
+        </div>
+        <div style="position:relative;flex-shrink:0">
+          <button onclick="toggleMSIMenu(${m.id},event)" style="background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px;line-height:1">⋯</button>
+          <div id="msi-menu-${m.id}" style="display:none;position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 4px 16px rgba(0,0,0,.15);z-index:9999;min-width:140px;overflow:hidden">
+            <button onclick="editarMSI(${m.id});closeMSIMenus()" style="display:block;width:100%;text-align:left;background:none;border:none;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);cursor:pointer">✏️ Editar</button>
+            <button onclick="liquidarMSI(${m.id});closeMSIMenus()" style="display:block;width:100%;text-align:left;background:none;border:none;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--green);cursor:pointer">💰 Liquidar</button>
+            <button onclick="eliminarMSI(${m.id});closeMSIMenus()" style="display:block;width:100%;text-align:left;background:none;border:none;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--accent2);cursor:pointer">🗑️ Eliminar</button>
+          </div>
+        </div>
+      </div>
+      <!-- Fila 2: monto grande a la derecha -->
+      <div style="text-align:right;margin-bottom:8px">
+        <div style="font-size:24px;font-weight:700;color:var(--text)">${fmt(m.mensual)}</div>
+        ${m.pagoType!=='solo'?`<div style="font-size:11px;color:var(--green)">mi parte: ${fmt(m.miMensual)}</div>`:''}
+      </div>
+
+
+      <div style="margin:8px 0 4px;display:flex;gap:2px;height:8px">${(()=>{
+        const maxD=Math.min(m.meses,24);
+        const color=rest<=1?'var(--green)':pct>=50?'var(--yellow)':'var(--accent)';
+        const filledUpTo=Math.min(CURRENT_MONTH_IDX-m.mesInicio+1,m.meses);
+        let d='';
+        for(let i=0;i<maxD;i++){
+          const filled=i<filledUpTo;
+          const isFirst=i===0,isLast=i===maxD-1;
+          const r=isFirst?'4px 2px 2px 4px':isLast?'2px 4px 4px 2px':'2px';
+          d+=`<div style="flex:1;height:100%;border-radius:${r};background:${filled?color:'color-mix(in srgb,var(--border) 80%,transparent)'}"></div>`;
+        }
+        return d;
+      })()}</div>
+      <div class="prog-labels"><span style="color:var(--muted);font-size:12px">${Math.min(CURRENT_MONTH_IDX-m.mesInicio+1,m.meses)}/${m.meses} pagos</span><span style="color:var(--muted);font-size:12px">${fmt(+m.montoTotal-(pagosHechos*+m.mensual))} pendiente</span></div></div>`;
   }).join('');
 }
 
@@ -2589,12 +2528,12 @@ function renderProxMes(){
   h+='</div>';
 
   if(liberan.length>0){
-    h+='<div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:6px">🎉 Se liberan (terminan este mes)</div>';
+    h+='<div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px">⚠️ Último pago este mes — libres el próximo</div>';
     liberan.forEach(function(m){
       h+='<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-top:1px solid var(--border)">';
       h+='<span style="color:var(--muted)">'+m.desc+'</span><span style="color:var(--green)">+'+fmt(m.mensual)+'/mes</span></div>';
     });
-    h+='<div style="text-align:right;font-size:11px;color:var(--green);margin-top:4px;margin-bottom:10px">Total libre: +'+fmt(liberado)+'/mes</div>';
+    h+='<div style="text-align:right;font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:10px">Se libera desde el próximo mes: '+fmt(liberado)+'/mes</div>';
   }
 
   if(nuevos.length>0){
@@ -3239,6 +3178,26 @@ function renderTerminados(){
       +'</div></div>';
   }).join('');
 }
+
+
+function toggleMSIMenu(id, e){
+  e.stopPropagation();
+  closeMSIMenus();
+  var menu=document.getElementById('msi-menu-'+id);
+  if(!menu)return;
+  var btn=e.currentTarget;
+  var r=btn.getBoundingClientRect();
+  menu.style.display='block';
+  var mw=menu.offsetWidth;
+  var left=r.right-mw;
+  if(left<8)left=8;
+  menu.style.top=(r.bottom+4)+'px';
+  menu.style.left=left+'px';
+}
+function closeMSIMenus(){
+  document.querySelectorAll('[id^="msi-menu-"]').forEach(function(m){m.style.display='none';});
+}
+document.addEventListener('click', function(){closeMSIMenus();});
 
 
 loadAll();
